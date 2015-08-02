@@ -1,19 +1,15 @@
-#include "QtkHttpServer.h"
-#include "qtkMjpgStreamer.h"
- 
+#include "qtkHttpServer.h"
+
 QtkHttpServer::QtkHttpServer(quint16 port, QObject* parent)
          : QTcpServer(parent)
 {
          listen(QHostAddress::Any, port);
-         this->m_videoServer = 0;
-		 this->m_mjpegUri = HS_MJPEG_DEFAULT_URI;
 		 this->m_fileRootPath= HS_WWW_DEFAULT_PATH;
 		 this->m_clientCount = 0;
-}
-
-void QtkHttpServer::setMjpgUri(QString uri)
-{
-	this->m_mjpegUri = uri;
+#ifdef HS_MJPG_STREAMER_ENABLE
+		 this->m_videoServer = 0;
+		 this->m_mjpegUri = HS_MJPEG_DEFAULT_URI;
+#endif
 }
 
 void QtkHttpServer::setFilesRootPath(QString path)
@@ -24,11 +20,6 @@ void QtkHttpServer::setFilesRootPath(QString path)
 void QtkHttpServer::setAppRootPath(QString path)
 {
 	this->m_appRootPath = path;
-}
-
-void QtkHttpServer::setVideoServer(QtkVideoServer* videoServer)
-{
-	this->m_videoServer = videoServer;
 }
 
 void QtkHttpServer::incomingConnection(int socket)
@@ -63,14 +54,21 @@ void QtkHttpServer::readClient()
          QTextStream os(socket);
          os.setAutoDetectUnicode(true);
 
-         if (socket->canReadLine()) {
+#ifdef HS_RPC_SERVER_ENABLE
+    QJsonDocument* doc = new QJsonDocument();
+    QJsonParseError err;
+#endif
+
+         if (socket->canReadLine())
+         {
              QStringList tokens = QString(socket->readLine()).split(QRegExp("[ \r\n][ \r\n]*"));
-             if (tokens[0] == "GET") 
+             QString fileName = tokens[1];
+			 
+			 if (tokens[0] == "GET") 
 			 {				
-				QString fileName = tokens[1];
-				
-                switch(this->getFilename(&fileName))
+			   switch(this->getFilename(&fileName))
 				{
+#ifdef HS_MJPG_STREAMER_ENABLE				
                     case HS_GET_MJPG_STREAM:
                         if(this->m_videoServer)
                         {
@@ -88,7 +86,7 @@ void QtkHttpServer::readClient()
                             return;
                         }
 						break;
-						
+#endif						
                     case HS_GET_LOCAL_FILE:
 						qDebug() << "Client file request: " << fileName;
 					default:
@@ -116,17 +114,49 @@ void QtkHttpServer::readClient()
 				else
 				{
 					os << "HTTP/1.0 404 Error file not found\r\n\r\n";				
-					qDebug() << "[404] File not found: " << file.fileName();
+					qDebug() << "[404] File not found (GET): " << file.fileName();
 				}									
                      
-                socket->close();
-                
+                socket->close();                
                 if (socket->state() == QTcpSocket::UnconnectedState) 
 				{
 					socket->deleteLater();                
                 }
              }
+			 else if (tokens[0] == "POST") 
+			 {	
+				QMap<QByteArray, QByteArray> heqaders;
+				heqaders = this->parseHttpHeaders(socket->readAll());
+
+				switch(this->getFilename(&fileName))
+				{
+#ifdef HS_RPC_SERVER_ENABLE				
+                    case HS_POST_JSON_RPC:										
+						*doc = QJsonDocument::fromJson(fd,&err);
+						if(err.error !=  QJsonParseError::NoError)
+						{
+							QtkJsRpcServer*  server = new QtkJsRpcServer(socket, doc);								
+							connect(socket, SIGNAL(disconnected()), server, SLOT(OnDisconnected())); 
+							return;						                        
+						}
+						else
+						{
+							qDebug() << "JSON parse error!" << fileName;
+						}
+						//OSLL: Continues to 'default' on error...		
+#endif			
+					default:
+						os << "HTTP/1.0 404 Error file not found\r\n\r\n";				
+						qDebug() << "[404] File not found (POST): " << fileName;
+			            socket->close();                
+						if (socket->state() == QTcpSocket::UnconnectedState) 
+						{
+							socket->deleteLater();                
+						}
+						break;				
+                }
          }
+    }
 }
 
 QString QtkHttpServer::getMIMEType(QString extension)
@@ -161,10 +191,18 @@ int QtkHttpServer::getFilename(QString* filename)
 		filename->append(QString(this->m_fileRootPath));		
 		filename->append(QString(HS_WWW_DEFAULT_ROOT));		
 	}
+#ifdef HS_MJPG_STREAMER_ENABLE	
 	else if(filename->compare(QString(HS_MJPEG_DEFAULT_URI)) == 0)
 	{
 		return HS_GET_MJPG_STREAM;
 	}
+#endif	
+#ifdef HS_RPC_SERVER_ENABLE
+	else if(filename->compare(QString(HS_JSRPC_DEFAULT_URI)) == 0)
+	{
+		return HS_POST_JSON_RPC;
+	}
+#endif	
 	else
 	{
 		filename->prepend(QString(HS_WWW_DEFAULT_PATH));		
@@ -175,7 +213,33 @@ int QtkHttpServer::getFilename(QString* filename)
 	return HS_GET_LOCAL_FILE  ;
 }
 
- void QtkHttpServer::setMaxFramerate(int maxFrameRate)
- {
+QMap<QByteArray, QByteArray> QtkHttpServer::parseHttpHeaders(QByteArray httpHeaders)
+//http://stackoverflow.com/questions/10893525/how-can-we-parse-http-response-header-fields-using-qt-c
+{
+	QMap<QByteArray, QByteArray> headers;
+	foreach(QByteArray line, httpHeaders.split('\n')) 
+	{
+		int colon = line.indexOf(':');
+		QByteArray headerName = line.left(colon).trimmed();
+		QByteArray headerValue = line.mid(colon + 1).trimmed();
+		headers.insertMulti(headerName, headerValue);
+	}
+	return headers;
+}
+
+#ifdef HS_MJPG_STREAMER_ENABLE
+void QtkHttpServer::setMaxFramerate(int maxFrameRate)
+{
 	 this->m_maxFrameRate = maxFrameRate;
- }
+}
+ 
+void QtkHttpServer::setMjpgUri(QString uri)
+{
+	this->m_mjpegUri = uri;
+}
+
+void QtkHttpServer::setVideoServer(QtkVideoServer* videoServer)
+{
+	this->m_videoServer = videoServer;
+}
+#endif
