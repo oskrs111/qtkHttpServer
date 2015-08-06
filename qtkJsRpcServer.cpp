@@ -1,3 +1,4 @@
+#include "qtkRtpCommand_headers.h"
 #include "qtkJsRpcServer.h"
 
 QtkJsRpcServer::QtkJsRpcServer(QTcpSocket* socket, QJsonDocument* jsData)
@@ -20,6 +21,11 @@ QtkJsRpcServer::QtkJsRpcServer(QTcpSocket* socket, QJsonDocument* jsData)
 	}	
 }
 
+QtkJsRpcServer::~QtkJsRpcServer()
+{
+    //lliberar this->l_commands
+}
+
 void QtkJsRpcServer::OnFrameUpdated()
 {
     this->m_jpegBytes = this->m_videoServer->currentFrame2ByteArrayJpeg();
@@ -28,23 +34,31 @@ void QtkJsRpcServer::OnFrameUpdated()
 	
 void QtkJsRpcServer::OnServerRun()
 {	
+    static int commandId = 0;
+
     switch(this->m_serverState)
     {
 		case sstIdle:
 			break;
 
-		case sstGetMethod:
-			this->setServerState(sstExecuteMethod);
+        case sstGetCommand:
+            this->setServerState(sstExecuteCommand);
 			break;
 		
-		case sstExecuteMethod:
-			this->setServerState(sstSendReply);
+        case sstExecuteCommand:
+            emit commandExecute(commandId, QByteArray params);
+            this->setServerState(sstWaitCommandReply);
 			break;
 			
-		case sstSendReply:
-			this->setServerState(sstConnectionClose);
+        case sstWaitCommandReply:
+            this->setServerState(sstSendCommandReply);
+            //Poasr un timeout....
 			break;
 			
+        case sstSendCommandReply:
+            this->setServerState(sstConnectionClose);
+            break;
+
 		case sstConnectionClose:
 			socket->close(); 			
 		case sstConnectionClosed:
@@ -97,6 +111,18 @@ int QtkJsRpcServer::getLastError()
 void QtkJsRpcServer::OnDisconnected()
 {
 	 this->setServerState(sstConnectionClosed);
-	 //this->deleteLater();
+     this->deleteLater();
+}
+
+void QtkJsRpcServer::OnCommandDone(int commandId, QByteArray result)
+{
+
+}
+
+void QtkJsRpcServer::commandsInit()
+//OSLL: Command objects initialization...
+{
+    qtkRtpCommand_Test* cmd1 = new qtkRtpCommand_Test(this);
+    this->l_commands.append(cmd1);
 }
 

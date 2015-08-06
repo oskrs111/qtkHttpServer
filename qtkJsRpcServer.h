@@ -18,14 +18,16 @@ private:
 	QString	m_replyString;	
     int m_error;
 	int m_serverState;
+	QList <QObject*> l_commands;
 
     enum serverStates
     {
         sstIdle = 0,
-        sstGetMethod,    
-		sstExecuteMethod,    
-		sstSendReply,   
-		sstConnectionClose,
+        sstGetCommand,
+        sstExecuteCommand,
+        sstWaitCommandReply,
+        sstSendCommandReply,
+        sstConnectionClose,
 		sstConnectionClosed,
         sstError = 100,
         sstLast
@@ -37,17 +39,20 @@ private:
         errLast
     };
 
+    ~QtkJsRpcServer();
     void setServerState(int state);    
     QByteArray getHttpHeader();    
     
     void setLastError(int error);
-    int getLastError();
+    int getLastError();	
+	void commandsInit();
 	
 signals:
     void serverError(int error);
-
+	void commandExecute(int commandId, QByteArray params);
 public slots:
 	void OnServerRun();
 	void OnDisconnected();
+	void OnCommandDone(int commandId, QByteArray result);
 };
 #endif
