@@ -11,15 +11,18 @@ public:
 
 private:
     int m_commandId;
-    virtual void CommandInit();
-    virtual void CommandExecute(QByteArray params) = 0;
 
 public:
-signals:
+    virtual void CommandInit() = 0;
+    virtual void CommandExecute(QJsonObject params) = 0;
+    void SetCommandId(int commandId);
+    int GetCommandId();
+
+Q_SIGNALS:
     void commandDone(int commandId, QByteArray result);
 
 public slots:
-    void OnCommandExecute(int commandId, QByteArray params);
+    void OnCommandExecute(int commandId, QJsonObject params);
 };
 
 #endif // QTKRTPCOMMAND__H

@@ -3,7 +3,7 @@
 #include <QtNetwork>
 #include "qtkHttpCommon.h"
 
-#define SM_TIMER_PRESCALER 	50
+#define SM_TIMER_PRESCALER 	25
 
 class QtkJsRpcServer : public QObject
 {
@@ -14,8 +14,7 @@ class QtkJsRpcServer : public QObject
 
 private:    	
 	QJsonDocument* m_jsData;		
-    QTcpSocket* m_socket;       
-	QString	m_replyString;	
+    QTcpSocket* m_socket;       	
     int m_error;
 	int m_serverState;
 	QList <QObject*> l_commands;
@@ -26,7 +25,6 @@ private:
         sstGetCommand,
         sstExecuteCommand,
         sstWaitCommandReply,
-        sstSendCommandReply,
         sstConnectionClose,
 		sstConnectionClosed,
         sstError = 100,
@@ -41,15 +39,14 @@ private:
 
     ~QtkJsRpcServer();
     void setServerState(int state);    
-    QByteArray getHttpHeader();    
-    
     void setLastError(int error);
     int getLastError();	
 	void commandsInit();
+    int findCommandId(QString commandAlias);
 	
 signals:
     void serverError(int error);
-	void commandExecute(int commandId, QByteArray params);
+    void commandExecute(int commandId, QJsonObject params);
 public slots:
 	void OnServerRun();
 	void OnDisconnected();

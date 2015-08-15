@@ -1,7 +1,10 @@
 #ifndef QTKRTPCOMMAND_TEST__H
-#define QTKRTPCOMMAND_TEST_H
+#define QTKRTPCOMMAND_TEST__H
 #include <QObject>
 #include "qtkRtpCommand_id.h"
+#include "qtkRtpCommand_.h"
+
+
 
 class qtkRtpCommand_Test : public qtkRtpCommand_
 {
@@ -11,19 +14,26 @@ public:
 
 private:
     void CommandInit();
-    void CommandExecute(QByteArray params);
+    void CommandExecute(QJsonObject params);
 };
+
+inline qtkRtpCommand_Test::qtkRtpCommand_Test(QtkJsRpcServer *parent)
+        : qtkRtpCommand_(parent)
+{
+	this->CommandInit();
+}
 
 inline void qtkRtpCommand_Test::CommandInit()
 {
-	this->m_commandId = rci_TestCommand;
+        this->SetCommandId(k_rtp_command_id::rci_TestCommand);
 }
 
-inline void qtkRtpCommand_Test::CommandExecute(QByteArray  params)
+inline void qtkRtpCommand_Test::CommandExecute(QJsonObject params)
 {
-	QByteArray result = "{'jsonrpc': '2.0', 'result': 19, 'id': 1}"
-	result = result.replace(''', '"');
-	emit commandDone(this->m_commandId, result);	
+    int sum = 69;
+    QString result = QString("{'jsonrpc': '2.0', 'result': %1, 'id': 1}").arg(sum,0,10);
+    result = result.replace('\'', '"');
+    emit commandDone(this->GetCommandId(), result.toLatin1());
 }
 
 #endif

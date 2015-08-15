@@ -125,15 +125,19 @@ void QtkHttpServer::readClient()
              }
 			 else if (tokens[0] == "POST") 
 			 {	
-				QMap<QByteArray, QByteArray> heqaders;
-				heqaders = this->parseHttpHeaders(socket->readAll());
+				QMap<QByteArray, QByteArray> headers;
+				QByteArray http = socket->readAll();
+				headers = this->parseHttpHeaders(http);
+				QByteArray rpc;
 
 				switch(this->getFilename(&fileName))
 				{
 #ifdef HS_RPC_SERVER_ENABLE				
-                    case HS_POST_JSON_RPC:										
-						*doc = QJsonDocument::fromJson(fd,&err);
-						if(err.error !=  QJsonParseError::NoError)
+                    case HS_POST_JSON_RPC:				
+						rpc = this->getPostBody(http);						
+						*doc = QJsonDocument::fromJson(rpc,&err);
+						qDebug() << *doc;
+						if(err.error ==  QJsonParseError::NoError)
 						{
 							QtkJsRpcServer*  server = new QtkJsRpcServer(socket, doc);								
 							connect(socket, SIGNAL(disconnected()), server, SLOT(OnDisconnected())); 
@@ -226,6 +230,17 @@ QMap<QByteArray, QByteArray> QtkHttpServer::parseHttpHeaders(QByteArray httpHead
 	}
 	return headers;
 }
+
+QByteArray QtkHttpServer::getPostBody(QByteArray http)
+{
+	int pos = 0;
+	int size = 0;
+	pos = http.indexOf(QString("\r\n\r\n"));
+	size = http.size();
+
+	return http.right(size - pos);
+}
+
 
 #ifdef HS_MJPG_STREAMER_ENABLE
 void QtkHttpServer::setMaxFramerate(int maxFrameRate)

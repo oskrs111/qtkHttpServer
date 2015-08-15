@@ -147,7 +147,7 @@ QByteArray QtkMjpgStreamer::getHttpHeader()
 {
     QString s;
     s = QString("HTTP/1.0 200 OK\r\n" \
-                STD_HEADER \
+                HMIN_STD_HEADER \
                 "Content-Type: multipart/x-mixed-replace;boundary=--" DEFAULT_BOUNDARY "\r\n" \
                 "\r\n" );
                 

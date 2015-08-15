@@ -1,4 +1,5 @@
 #include "qtkRtpCommand_headers.h"
+#include "qtkRtpCommand_id.h"
 #include "qtkJsRpcServer.h"
 
 QtkJsRpcServer::QtkJsRpcServer(QTcpSocket* socket, QJsonDocument* jsData)
@@ -10,11 +11,20 @@ QtkJsRpcServer::QtkJsRpcServer(QTcpSocket* socket, QJsonDocument* jsData)
 	if(jsData)
 	{
 		this->m_jsData = jsData;
-		this->setServerState(sstGetMethod);	
-		QTimer::singleShot(SM_TIMER_PRESCALER, this, SLOT(OnServerRun()));
+        if(this->m_jsData->isObject() == true)
+        {
+            this->commandsInit();
+			this->setServerState(sstGetCommand);
+            QTimer::singleShot(SM_TIMER_PRESCALER, this, SLOT(OnServerRun()));
+        }
+        else
+        {
+            goto error_;
+        }
 	}
 	else
-	{
+    {
+error_:
 		socket->close(); 
 		socket->deleteLater();
 		this->deleteLater();
@@ -23,18 +33,18 @@ QtkJsRpcServer::QtkJsRpcServer(QTcpSocket* socket, QJsonDocument* jsData)
 
 QtkJsRpcServer::~QtkJsRpcServer()
 {
-    //lliberar this->l_commands
-}
-
-void QtkJsRpcServer::OnFrameUpdated()
-{
-    this->m_jpegBytes = this->m_videoServer->currentFrame2ByteArrayJpeg();
-    this->m_frameReady = true;	
+    int t = 0;
+    for(t = 0; t < this->l_commands.size(); t++)
+    {
+       delete  this->l_commands.at(t);
+    }
 }
 	
 void QtkJsRpcServer::OnServerRun()
 {	
-    static int commandId = 0;
+    int commandId = 0;
+    QJsonObject params;
+    QString command;
 
     switch(this->m_serverState)
     {
@@ -42,34 +52,33 @@ void QtkJsRpcServer::OnServerRun()
 			break;
 
         case sstGetCommand:
+            command = this->m_jsData->object().take("method").toString();
+            params = this->m_jsData->object().take("params").toObject();
+            commandId = this->findCommandId(command);
             this->setServerState(sstExecuteCommand);
-			break;
 		
         case sstExecuteCommand:
-            emit commandExecute(commandId, QByteArray params);
-            this->setServerState(sstWaitCommandReply);
+			this->setServerState(sstWaitCommandReply);
+            emit commandExecute(commandId, params);            
 			break;
 			
         case sstWaitCommandReply:
-            this->setServerState(sstSendCommandReply);
+
             //Poasr un timeout....
 			break;
-			
-        case sstSendCommandReply:
-            this->setServerState(sstConnectionClose);
-            break;
 
 		case sstConnectionClose:
-			socket->close(); 			
+			if(this->m_socket->bytesToWrite()) break;
+            this->m_socket->close();
 		case sstConnectionClosed:
-			//dump.close();
-			socket->deleteLater();		
+            this->m_socket->deleteLater();
 		    this->deleteLater();			
 			qDebug() << "Rpc end...";
 			return;
 
 		case sstError:
-            emit streamerError(this->getLastError());
+            emit serverError(this->getLastError());
+            this->setServerState(sstConnectionClose);
             return;
 
         default:
@@ -77,18 +86,6 @@ void QtkJsRpcServer::OnServerRun()
     }
 
     QTimer::singleShot(SM_TIMER_PRESCALER, this, SLOT(OnServerRun()));
-}
-
-QByteArray QtkJsRpcServer::getHttpHeader()
-{
-    QString s;
-    s = QString("HTTP/1.0 200 OK\r\n" \
-                STD_HEADER \
-                "Content-Type: application/json\r\n" \
-				"Content-Length: %1\r\n" \
-                "\r\n" ).arg(this->m_replyString.size(),0,10);
-                
-    return s.toUtf8();
 }
 
 void QtkJsRpcServer::setServerState(int state)
@@ -116,7 +113,18 @@ void QtkJsRpcServer::OnDisconnected()
 
 void QtkJsRpcServer::OnCommandDone(int commandId, QByteArray result)
 {
+    QTextStream os(this->m_socket);
+    os.setAutoDetectUnicode(true);
 
+    os << QString("%1").arg(QString(H200_STD_HEADER));
+    os << QString("%1").arg(QString(HRPC_STD_HEADER));
+    os << QString("%1\r\n").arg(result.size(),10);
+    os << "\r\n";
+    os.flush();
+    this->m_socket->write(result);
+	this->m_socket->flush();
+    this->setServerState(sstConnectionClose);
+    qDebug() << "[200] RPC reply: " << result << " commandId: " << commandId;
 }
 
 void QtkJsRpcServer::commandsInit()
@@ -126,3 +134,19 @@ void QtkJsRpcServer::commandsInit()
     this->l_commands.append(cmd1);
 }
 
+int QtkJsRpcServer::findCommandId(QString commandAlias)
+{
+    struct k_rtp_command_id::rtpCommandStruct* p;
+    int t = 0;
+
+    for(t = 0; t < (sizeof(k_rtp_command_id::rtpCommands)/sizeof(k_rtp_command_id::rtpCommandStruct)); t++)
+    {
+        p = &k_rtp_command_id::rtpCommands[t];
+        if(commandAlias.compare(QString(p->p_commandAlias)) == 0)
+        {
+            return p->m_commandId;
+        }
+    }
+
+    return 0;
+}

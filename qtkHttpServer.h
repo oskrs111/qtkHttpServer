@@ -64,7 +64,8 @@ class QtkHttpServer : public QTcpServer
      void discardClient();
 
  private:     
-	 QMap<QByteArray, QByteArray> QtkHttpServer::parseHttpHeaders(QByteArray httpHeaders);
+	 QMap<QByteArray, QByteArray> parseHttpHeaders(QByteArray httpHeaders);
+	 QByteArray getPostBody(QByteArray http);
      QString getMIMEType(QString extension);
      int getFilename(QString* filename);     
 	 QString m_fileRootPath;
