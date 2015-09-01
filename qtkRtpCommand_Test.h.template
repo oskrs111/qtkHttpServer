@@ -4,7 +4,7 @@
 #include "qtkRtpCommand_id.h"
 #include "qtkRtpCommand_.h"
 
-
+//This is a example template. Place this file and other qtkRtpCommand_xxxxx.h outside this folder ;-)...
 
 class qtkRtpCommand_Test : public qtkRtpCommand_
 {
