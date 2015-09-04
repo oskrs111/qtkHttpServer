@@ -53,6 +53,7 @@ class QtkHttpServer : public QTcpServer
      void incomingConnection(int socket);     
      void setFilesRootPath(QString path);
 	 void setAppRootPath(QString path);
+     QObject* getEventTarget(QString targetName);
 #ifdef HS_MJPG_STREAMER_ENABLE
 	 void setMjpgUri(QString uri);
 	 void setVideoServer(QtkVideoServer* videoServer);

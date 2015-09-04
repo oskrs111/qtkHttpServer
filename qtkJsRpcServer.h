@@ -9,12 +9,12 @@ class QtkJsRpcServer : public QObject
 {
     Q_OBJECT
  public:
-	QtkJsRpcServer(QTcpSocket* socket, QJsonDocument* jsData);
-    void setMaxFramerate(int maxFrameRate);
+    QtkJsRpcServer(QTcpSocket* socket, QJsonDocument* jsData, QObject* parent);
+    QObject* getEventTarget(QString targetName);
 
 private:    	
-	QJsonDocument* m_jsData;		
-    QTcpSocket* m_socket;       	
+    QJsonDocument* p_jsData;
+    QTcpSocket* p_socket;    
     int m_error;
 	int m_serverState;
 	QList <QObject*> l_commands;

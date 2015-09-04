@@ -1,17 +1,19 @@
 #include "qtkRtpCommand_headers.h"
 #include "qtkRtpCommand_id.h"
+#include "qtkHttpServer.h"
 #include "qtkJsRpcServer.h"
 
-QtkJsRpcServer::QtkJsRpcServer(QTcpSocket* socket, QJsonDocument* jsData)
+QtkJsRpcServer::QtkJsRpcServer(QTcpSocket* socket, QJsonDocument* jsData, QObject *parent)
+               :QObject(parent)
 {
     this->m_error = errNoError;
-    this->m_socket = socket;    
+    this->p_socket = socket;
     this->m_serverState = 0;
 
 	if(jsData)
 	{
-		this->m_jsData = jsData;
-        if(this->m_jsData->isObject() == true)
+        this->p_jsData = jsData;        
+        if(this->p_jsData->isObject() == true)
         {
             this->commandsInit();
 			this->setServerState(sstGetCommand);
@@ -52,10 +54,17 @@ void QtkJsRpcServer::OnServerRun()
 			break;
 
         case sstGetCommand:
-            command = this->m_jsData->object().take("method").toString();
-            params = this->m_jsData->object().take("params").toObject();
+            command = this->p_jsData->object().take("method").toString();
+            params = this->p_jsData->object().take("params").toObject();
             commandId = this->findCommandId(command);
-            this->setServerState(sstExecuteCommand);
+            if(commandId == 0)
+            {
+                this->OnCommandDone(commandId,
+                                    QByteArray("{\"jsonrpc\": \"2.0\", \"result\": \"unknown method\", \"id\": 1}"));
+                this->setServerState(sstConnectionClose);
+                break;
+            }
+            else this->setServerState(sstExecuteCommand);
 		
         case sstExecuteCommand:
 			this->setServerState(sstWaitCommandReply);
@@ -68,10 +77,10 @@ void QtkJsRpcServer::OnServerRun()
 			break;
 
 		case sstConnectionClose:
-			if(this->m_socket->bytesToWrite()) break;
-            this->m_socket->close();
+            if(this->p_socket->bytesToWrite()) break;
+            this->p_socket->close();
 		case sstConnectionClosed:
-            this->m_socket->deleteLater();
+            this->p_socket->deleteLater();
 		    this->deleteLater();			
 			qDebug() << "Rpc end...";
 			return;
@@ -113,7 +122,7 @@ void QtkJsRpcServer::OnDisconnected()
 
 void QtkJsRpcServer::OnCommandDone(int commandId, QByteArray result)
 {
-    QTextStream os(this->m_socket);
+    QTextStream os(this->p_socket);
     os.setAutoDetectUnicode(true);
 
     os << QString("%1").arg(QString(H200_STD_HEADER));
@@ -121,8 +130,8 @@ void QtkJsRpcServer::OnCommandDone(int commandId, QByteArray result)
     os << QString("%1\r\n").arg(result.size(),10);
     os << "\r\n";
     os.flush();
-    this->m_socket->write(result);
-	this->m_socket->flush();
+    this->p_socket->write(result);
+    this->p_socket->flush();
     this->setServerState(sstConnectionClose);
     qDebug() << "[200] RPC reply: " << result << " commandId: " << commandId;
 }
@@ -150,4 +159,12 @@ int QtkJsRpcServer::findCommandId(QString commandAlias)
     }
 
     return 0;
+}
+
+QObject* QtkJsRpcServer::getEventTarget(QString targetName)
+{
+    QtkHttpServer* parent = 0;
+
+    parent = (QtkHttpServer*)this->parent();
+    return parent->getEventTarget(targetName);
 }

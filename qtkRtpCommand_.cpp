@@ -1,4 +1,5 @@
 #include "qtkRtpCommand_.h"
+#include "qtkRtpCommand_id.h"
 
 qtkRtpCommand_::qtkRtpCommand_(QtkJsRpcServer *parent) :
     QObject(parent)
@@ -10,7 +11,7 @@ qtkRtpCommand_::qtkRtpCommand_(QtkJsRpcServer *parent) :
 void qtkRtpCommand_::SetCommandId(int commandId)
 {
     this->m_commandId = commandId;
-    qDebug() << "[RPC-COMMAND] New with id= " << commandId;
+    qDebug() << "[rpcObject] New with id= " << commandId << " method= " << k_rtp_command_id::rtpCommands[(commandId - RCI_BASE)].p_commandAlias;
 }
 
 int qtkRtpCommand_::GetCommandId()

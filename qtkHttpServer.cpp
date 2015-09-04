@@ -6,6 +6,8 @@ QtkHttpServer::QtkHttpServer(quint16 port, QObject* parent)
          listen(QHostAddress::Any, port);
 		 this->m_fileRootPath= HS_WWW_DEFAULT_PATH;
 		 this->m_clientCount = 0;
+         qDebug() << "httpServer listening on tcp port: " << port;
+         qDebug() << "httpServer files at: " << this->m_fileRootPath;
 #ifdef HS_MJPG_STREAMER_ENABLE
 		 this->m_videoServer = 0;
 		 this->m_mjpegUri = HS_MJPEG_DEFAULT_URI;
@@ -139,7 +141,7 @@ void QtkHttpServer::readClient()
 						qDebug() << *doc;
 						if(err.error ==  QJsonParseError::NoError)
 						{
-							QtkJsRpcServer*  server = new QtkJsRpcServer(socket, doc);								
+                            QtkJsRpcServer*  server = new QtkJsRpcServer(socket, doc, this);
 							connect(socket, SIGNAL(disconnected()), server, SLOT(OnDisconnected())); 
 							return;						                        
 						}
@@ -241,7 +243,6 @@ QByteArray QtkHttpServer::getPostBody(QByteArray http)
 	return http.right(size - pos);
 }
 
-
 #ifdef HS_MJPG_STREAMER_ENABLE
 void QtkHttpServer::setMaxFramerate(int maxFrameRate)
 {
@@ -258,3 +259,10 @@ void QtkHttpServer::setVideoServer(QtkVideoServer* videoServer)
 	this->m_videoServer = videoServer;
 }
 #endif
+
+QObject* QtkHttpServer::getEventTarget(QString targetName)
+{
+    QObject* target;
+    target = this->parent()->findChild<QObject *>(targetName);
+    return target;
+}
