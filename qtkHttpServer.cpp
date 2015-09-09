@@ -6,8 +6,9 @@ QtkHttpServer::QtkHttpServer(quint16 port, QObject* parent)
          listen(QHostAddress::Any, port);
 		 this->m_fileRootPath= HS_WWW_DEFAULT_PATH;
 		 this->m_clientCount = 0;
-         qDebug() << "httpServer listening on tcp port: " << port;
-         qDebug() << "httpServer files at: " << this->m_fileRootPath;
+         this->printNetInterfaces();
+         qDebug() << "[httpServer] listening on tcp port: " << port;
+         qDebug() << "[httpServer] files at: " << this->m_fileRootPath;
 #ifdef HS_MJPG_STREAMER_ENABLE
 		 this->m_videoServer = 0;
 		 this->m_mjpegUri = HS_MJPEG_DEFAULT_URI;
@@ -37,12 +38,12 @@ void QtkHttpServer::incomingConnection(int socket)
 			 connect(s, SIGNAL(disconnected()), this, SLOT(discardClient()));
 			 s->setSocketDescriptor(socket);
 			 
-			 qDebug() << "New Remote Connection..: " << this->m_clientCount;
+			 qDebug() << "[httpServer] New Remote Connection..: " << this->m_clientCount;
 			 this->m_clientCount++;
 		 }
 		 else
 		 {
-			qDebug() << "New Remote Connection..: OUT OF MEMORY!!!";
+			qDebug() << "[httpServer] New Remote Connection..: OUT OF MEMORY!!!";
 		 }
 
 }
@@ -83,20 +84,20 @@ void QtkHttpServer::readClient()
                         {
                             os << "HTTP/1.0 404 Not found\r\n\r\n";
 							os.flush();
-                            qDebug() << "[404] File not found: No video source available?" << fileName;
+                            qDebug() << "[httpServer] 404-File not found: No video source available?" << fileName;
                             socket->close();
                             return;
                         }
 						break;
 #endif						
                     case HS_GET_LOCAL_FILE:
-						qDebug() << "Client file request: " << fileName;
+						qDebug() << "[httpServer] Client file request: " << fileName;
 					default:
 						break;
 				}				
 			 
 				QFile file(fileName);					
-				qDebug() << "Serving: " << QFileInfo(file).absoluteFilePath();
+				qDebug() << "[httpServer] Serving: " << QFileInfo(file).absoluteFilePath();
                 if(file.open(QFile::ReadOnly))
 				{
 					os << "HTTP/1.0 200 Ok\r\n";				
@@ -111,12 +112,12 @@ void QtkHttpServer::readClient()
 					os.flush();
                     socket->write(file.readAll());
                     file.close();
-					qDebug() << "[200] File sent: " << file.fileName();
+					qDebug() << "[httpServer] 200-File sent: " << file.fileName();
 				}
 				else
 				{
 					os << "HTTP/1.0 404 Error file not found\r\n\r\n";				
-					qDebug() << "[404] File not found (GET): " << file.fileName();
+                    qDebug() << "[httpServer] 404-File not found (GET): " << file.fileName();
 				}									
                      
                 socket->close();                
@@ -147,13 +148,14 @@ void QtkHttpServer::readClient()
 						}
 						else
 						{
-							qDebug() << "JSON parse error!" << fileName;
+                            qDebug() << "[httpServer] JSON parse error!" << fileName;
+							//TODO: Send JSON-RPC parse error reply...
 						}
 						//OSLL: Continues to 'default' on error...		
 #endif			
 					default:
 						os << "HTTP/1.0 404 Error file not found\r\n\r\n";				
-						qDebug() << "[404] File not found (POST): " << fileName;
+                        qDebug() << "[httpServer] 404-File not found (POST): " << fileName;
 			            socket->close();                
 						if (socket->state() == QTcpSocket::UnconnectedState) 
 						{
@@ -185,7 +187,7 @@ void QtkHttpServer::discardClient()
     socket->deleteLater();         
 	
 	this->m_clientCount--;
-    qDebug() << "Release Remote Connection..: " << this->m_clientCount;
+    qDebug() << "[httpServer] Release Remote Connection..: " << this->m_clientCount;
 }
 
 int QtkHttpServer::getFilename(QString* filename)
@@ -265,4 +267,24 @@ QObject* QtkHttpServer::getEventTarget(QString targetName)
     QObject* target;
     target = this->parent()->findChild<QObject *>(targetName);
     return target;
+}
+
+void QtkHttpServer::printNetInterfaces()
+//https://sites.google.com/a/embeddedlab.org/community/technical-articles/qt/qt-posts/howtogetnetworkinterfaceinformationusingqt
+{
+    // First create a QNetworkInterface object.
+    QNetworkInterface interface;
+
+    // Then declare a QList using QHostAddress as the list type.
+
+    // After this, you can simply use ".allAddresses()" method to get ALL the
+    // network interface information, easy enough no?
+
+    QList<QHostAddress> IpList = interface.allAddresses();
+
+    // After that you can display the ip numbers on the console or do whatever you
+    // want with them.
+
+    for (int i = 0; i < IpList.size(); i++)
+         qDebug() << "[httpServer] Interface " << i << ":" << IpList.at(i).toString();
 }

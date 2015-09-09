@@ -43,8 +43,10 @@ QtkJsRpcServer::~QtkJsRpcServer()
 }
 	
 void QtkJsRpcServer::OnServerRun()
+//http://xmlrpc-epi.sourceforge.net/specs/rfc.fault_codes.php
 {	
     int commandId = 0;
+    int seqId = 0;
     QJsonObject params;
     QString command;
 
@@ -56,11 +58,13 @@ void QtkJsRpcServer::OnServerRun()
         case sstGetCommand:
             command = this->p_jsData->object().take("method").toString();
             params = this->p_jsData->object().take("params").toObject();
+            seqId  = this->p_jsData->object().take("id").toInt();
             commandId = this->findCommandId(command);
             if(commandId == 0)
             {
-                this->OnCommandDone(commandId,
-                                    QByteArray("{\"jsonrpc\": \"2.0\", \"result\": \"unknown method\", \"id\": 1}"));
+                QString ret = QString("{\"jsonrpc\": \"2.0\", \"error\": {\"code\": -32601, \"message\": \"server error. requested method not found\"}, \"id\": %1}").arg(seqId,0,10);
+				this->OnCommandDone(commandId, ret.toLatin1());
+
                 this->setServerState(sstConnectionClose);
                 break;
             }
@@ -68,7 +72,7 @@ void QtkJsRpcServer::OnServerRun()
 		
         case sstExecuteCommand:
 			this->setServerState(sstWaitCommandReply);
-            emit commandExecute(commandId, params);            
+            emit commandExecute(commandId, params, seqId);
 			break;
 			
         case sstWaitCommandReply:

@@ -4,7 +4,7 @@
 qtkRtpCommand_::qtkRtpCommand_(QtkJsRpcServer *parent) :
     QObject(parent)
 {    
-    connect(parent,SIGNAL(commandExecute(int, QJsonObject)),this,SLOT(OnCommandExecute(int,QJsonObject)));
+    connect(parent,SIGNAL(commandExecute(int, QJsonObject,int)),this,SLOT(OnCommandExecute(int,QJsonObject,int)));
     connect(this,SIGNAL(commandDone(int,QByteArray)),parent,SLOT(OnCommandDone(int,QByteArray)));    
 }
 
@@ -26,10 +26,10 @@ int qtkRtpCommand_::GetCommandId()
 //    this->m_commandId = 0;
 //}
 
-void qtkRtpCommand_::OnCommandExecute(int commandId, QJsonObject params)
+void qtkRtpCommand_::OnCommandExecute(int commandId, QJsonObject params, int seqId)
 {
     if(commandId == this->m_commandId)
     {
-        this->CommandExecute(params);
+        this->CommandExecute(params, seqId);
     }
 }

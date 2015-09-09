@@ -69,6 +69,7 @@ class QtkHttpServer : public QTcpServer
 	 QByteArray getPostBody(QByteArray http);
      QString getMIMEType(QString extension);
      int getFilename(QString* filename);     
+     void printNetInterfaces();
 	 QString m_fileRootPath;
 	 QString m_appRootPath;
 	 int m_clientCount;

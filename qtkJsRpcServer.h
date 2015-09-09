@@ -46,7 +46,7 @@ private:
 	
 signals:
     void serverError(int error);
-    void commandExecute(int commandId, QJsonObject params);
+    void commandExecute(int commandId, QJsonObject params, int seqId);
 public slots:
 	void OnServerRun();
 	void OnDisconnected();
