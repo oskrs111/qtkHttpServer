@@ -21,8 +21,8 @@ int qtkRtpCommand_::GetCommandId()
 
 //void qtkRtpCommand_::CommandInit()
 //{
-    //OSLL: Assign here the correct commandId for derived command classes on
-    //      overrriden function.
+//OSLL: Assign here the correct commandId for derived command classes on
+//      overrriden function.
 //    this->m_commandId = 0;
 //}
 

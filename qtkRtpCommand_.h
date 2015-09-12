@@ -24,5 +24,4 @@ Q_SIGNALS:
 public slots:
     void OnCommandExecute(int commandId, QJsonObject params, int seqId);
 };
-
 #endif // QTKRTPCOMMAND__H
