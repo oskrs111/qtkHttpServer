@@ -143,9 +143,7 @@ void QtkJsRpcServer::OnCommandDone(int commandId, QByteArray result)
 void QtkJsRpcServer::commandsInit()
 //OSLL: Command objects initialization...
 {
-#include "qtkRtpCommandsInit.h"
-    //qtkRtpCommand_Test* cmd1 = new qtkRtpCommand_Test(this);
-    //this->l_commands.append(cmd1);
+    #include "qtkRtpCommandsInit.h"
 }
 
 int QtkJsRpcServer::findCommandId(QString commandAlias)
