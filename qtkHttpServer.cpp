@@ -169,7 +169,7 @@ void QtkHttpServer::readClient()
 
 QString QtkHttpServer::getMIMEType(QString extension)
 {
-    for (int i=0; i < LENGTH_OF(mimetypes); i++ )
+    for (quint16 i=0; i < LENGTH_OF(mimetypes); i++ )
     {
         if(strcmp(mimetypes[i].dot_extension, extension.toUtf8().data()) == 0)
         {
@@ -196,7 +196,7 @@ int QtkHttpServer::getFilename(QString* filename)
 	if(filename->compare(QString("/")) == 0)
 	{	
 		filename->clear();		
-		filename->append(QString(this->m_fileRootPath));		
+        filename->append(QString(this->m_fileRootPath));
 		filename->append(QString(HS_WWW_DEFAULT_ROOT));		
 	}
 #ifdef HS_MJPG_STREAMER_ENABLE	
@@ -216,7 +216,7 @@ int QtkHttpServer::getFilename(QString* filename)
 		filename->prepend(QString(HS_WWW_DEFAULT_PATH));		
 	}
 	
-	filename->prepend(qApp->applicationDirPath());
+    //filename->prepend(qApp->applicationDirPath());
 
 	return HS_GET_LOCAL_FILE  ;
 }

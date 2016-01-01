@@ -40,9 +40,9 @@ void QtkMjpgStreamer::OnStreamerRun()
             //OSLL: Checking system is ready to run!!!
             if(this->m_videoServer)
             {
-                if(this->m_videoServer->getServerState() == QCamera::ActiveState)
+                //if(this->m_videoServer->getServerState() == QCamera::ActiveState)
                 this->setStreamerState(sstServeHeader);
-				this->m_videoServer->Capture();
+                //this->m_videoServer->Capture();
 				this->m_socket->setSocketOption(QAbstractSocket::LowDelayOption,1);
 				//dump.open(QIODevice::WriteOnly);
 				//qDebug() << "Dump path:" << QFileInfo(dump).absoluteFilePath();
@@ -85,7 +85,7 @@ sstServeFrameHeader:
             }
             else
             {
-				this->m_videoServer->Capture();
+//				this->m_videoServer->Capture();
                 break;
             }
             //OSLL: Continues to 'sstServeJpegBytes'
@@ -105,7 +105,7 @@ sstServeJpegBytes:
 			}
 			else
 			{
-				this->m_videoServer->Capture();
+//				this->m_videoServer->Capture();
 				break;
 			}
 
