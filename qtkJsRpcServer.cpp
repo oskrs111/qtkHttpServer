@@ -86,7 +86,7 @@ void QtkJsRpcServer::OnServerRun()
 		case sstConnectionClosed:
             this->p_socket->deleteLater();
 		    this->deleteLater();			
-			qDebug() << "Rpc end...";
+            qDebug() << "[rpc] Rpc end...";
 			return;
 
 		case sstError:
@@ -137,7 +137,7 @@ void QtkJsRpcServer::OnCommandDone(int commandId, QByteArray result)
     this->p_socket->write(result);
     this->p_socket->flush();
     this->setServerState(sstConnectionClose);
-    qDebug() << "[200] RPC reply: " << result << " commandId: " << commandId;
+    qDebug() << "[rpc] RPC-200 reply: " << result << " commandId: " << commandId;
 }
 
 void QtkJsRpcServer::commandsInit()

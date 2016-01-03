@@ -3,7 +3,7 @@
 #include <QtNetwork>
 #include "qtkHttpServerConfig.h"
 
-#define HS_WWW_DEFAULT_ROOT  "/index.html"
+#define HS_WWW_DEFAULT_HTML  "/index.html"
 #define HS_WWW_DEFAULT_PATH  ":/3w/"
 
 #define HS_GET_MJPG_STREAM 	100

@@ -1,2 +1,0 @@
-qtkRtpCommand_Test* cmd1 = new qtkRtpCommand_Test(this);
-this->l_commands.append(cmd1);

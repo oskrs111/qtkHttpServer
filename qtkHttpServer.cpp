@@ -4,7 +4,7 @@ QtkHttpServer::QtkHttpServer(quint16 port, QObject* parent)
          : QTcpServer(parent)
 {
          listen(QHostAddress::Any, port);
-		 this->m_fileRootPath= HS_WWW_DEFAULT_PATH;
+         this->m_fileRootPath = HS_WWW_DEFAULT_PATH;
 		 this->m_clientCount = 0;
          this->printNetInterfaces();
          qDebug() << "[httpServer] listening on tcp port: " << port;
@@ -17,7 +17,11 @@ QtkHttpServer::QtkHttpServer(quint16 port, QObject* parent)
 
 void QtkHttpServer::setFilesRootPath(QString path)
 {
-	this->m_fileRootPath = path;
+    if(path.compare(QString("void")) != 0)
+    {
+        this->m_fileRootPath = path;
+        qDebug() << "[httpServer] files set at: " << this->m_fileRootPath;
+    }
 }
 
 void QtkHttpServer::setAppRootPath(QString path)
@@ -135,7 +139,7 @@ void QtkHttpServer::readClient()
 
 				switch(this->getFilename(&fileName))
 				{
-#ifdef HS_RPC_SERVER_ENABLE				
+#ifdef HS_RPC_SERVER_ENABLE
                     case HS_POST_JSON_RPC:				
 						rpc = this->getPostBody(http);						
 						*doc = QJsonDocument::fromJson(rpc,&err);
@@ -148,7 +152,7 @@ void QtkHttpServer::readClient()
 						}
 						else
 						{
-                            qDebug() << "[httpServer] JSON parse error!" << fileName;
+                            qDebug() << "[httpServer] JSON parse error!" << rpc << "\r\n(error= " << err.errorString() << ")";
 							//TODO: Send JSON-RPC parse error reply...
 						}
 						//OSLL: Continues to 'default' on error...		
@@ -197,7 +201,7 @@ int QtkHttpServer::getFilename(QString* filename)
 	{	
 		filename->clear();		
         filename->append(QString(this->m_fileRootPath));
-		filename->append(QString(HS_WWW_DEFAULT_ROOT));		
+        filename->append(QString(HS_WWW_DEFAULT_HTML));
 	}
 #ifdef HS_MJPG_STREAMER_ENABLE	
 	else if(filename->compare(QString(HS_MJPEG_DEFAULT_URI)) == 0)
@@ -213,7 +217,8 @@ int QtkHttpServer::getFilename(QString* filename)
 #endif	
 	else
 	{
-		filename->prepend(QString(HS_WWW_DEFAULT_PATH));		
+        //filename->prepend(QString(HS_WWW_DEFAULT_PATH));
+        filename->prepend(this->m_fileRootPath);
 	}
 	
     //filename->prepend(qApp->applicationDirPath());
