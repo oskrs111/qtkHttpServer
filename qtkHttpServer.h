@@ -78,6 +78,8 @@ class QtkHttpServer : public QTcpServer
 	 QString m_mjpegUri;    
 	 int m_maxFrameRate;
 #endif
+signals:
+     void remoteRequest(int type);
 
 };
 #endif

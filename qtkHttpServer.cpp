@@ -85,6 +85,7 @@ void QtkHttpServer::readClient()
                             QtkMjpgStreamer* streamer = new QtkMjpgStreamer(socket, this->m_videoServer);	
 							streamer->setMaxFramerate(this->m_maxFrameRate);
 							connect(socket, SIGNAL(disconnected()), streamer, SLOT(OnDisconnected())); 
+                            emit this->remoteRequest(HS_GET_MJPG_STREAM);
                             return;
                         }
                         else
@@ -99,6 +100,7 @@ void QtkHttpServer::readClient()
 #endif						
                     case HS_GET_LOCAL_FILE:
 						qDebug() << "[httpServer] Client file request: " << fileName;
+                        emit this->remoteRequest(HS_GET_LOCAL_FILE);
 					default:
 						break;
 				}				
@@ -152,6 +154,7 @@ void QtkHttpServer::readClient()
 						{
                             QtkJsRpcServer*  server = new QtkJsRpcServer(socket, doc, this);
 							connect(socket, SIGNAL(disconnected()), server, SLOT(OnDisconnected())); 
+                            emit this->remoteRequest(HS_POST_JSON_RPC);
 							return;						                        
 						}
 						else
@@ -201,6 +204,13 @@ void QtkHttpServer::discardClient()
 
 int QtkHttpServer::getFilename(QString* filename)
 {
+    QStringList split = filename->split(QChar('?'));
+    if(split.size() > 1)
+    {
+        QString cgi = split.at(1);
+        *filename = split.at(0);
+    }
+
 
 	if(filename->compare(QString("/")) == 0)
 	{	
