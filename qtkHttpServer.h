@@ -4,7 +4,7 @@
 #include "qtkHttpServerConfig.h"
 
 #define HS_WWW_DEFAULT_HTML  "/index.html"
-#define HS_WWW_DEFAULT_PATH  ":/3w/"
+#define HS_WWW_DEFAULT_PATH  "./3w"
 
 #define HS_GET_MJPG_STREAM 	100
 #define HS_GET_LOCAL_FILE  	101

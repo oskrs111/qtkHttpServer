@@ -66,6 +66,9 @@ void QtkHttpServer::readClient()
     QJsonParseError err;
 #endif
 
+         qDebug() << "\r\n\r\n";
+         qDebug() << "[httpServer] Data Length= " << socket->bytesAvailable();
+
          if (socket->canReadLine())
          {
              QStringList tokens = QString(socket->readLine()).split(QRegExp("[ \r\n][ \r\n]*"));
@@ -115,13 +118,14 @@ void QtkHttpServer::readClient()
 					os << "\r\n";
 					os.flush();
                     socket->write(file.readAll());
+                    socket->flush();
                     file.close();
 					qDebug() << "[httpServer] 200-File sent: " << file.fileName();
 				}
 				else
 				{
 					os << "HTTP/1.0 404 Error file not found\r\n\r\n";				
-                    qDebug() << "[httpServer] 404-File not found (GET): " << file.fileName();
+                    qDebug() << "[httpServer-error] 404-File not found (GET): " << file.fileName();
 				}									
                      
                 socket->close();                
@@ -152,14 +156,15 @@ void QtkHttpServer::readClient()
 						}
 						else
 						{
-                            qDebug() << "[httpServer] JSON parse error!" << rpc << "\r\n(error= " << err.errorString() << ")";
-							//TODO: Send JSON-RPC parse error reply...
+                            qDebug() << "[httpServer-error] Received data= " << http;
+                            qDebug() << "[httpServer-error] JSON parse error!" << rpc << "\r\n(error= " << err.errorString() << ")";
+                            os << "{\"jsonrpc\": \"2.0\", \"error\": {\"code\": -32700, \"message\": \"Parse error. Invalid JSON was received by the server. An error occurred on the server while parsing the JSON text.\"}}";
 						}
 						//OSLL: Continues to 'default' on error...		
 #endif			
 					default:
 						os << "HTTP/1.0 404 Error file not found\r\n\r\n";				
-                        qDebug() << "[httpServer] 404-File not found (POST): " << fileName;
+                        qDebug() << "[httpServer-error] 404-File not found (POST): " << fileName;
 			            socket->close();                
 						if (socket->state() == QTcpSocket::UnconnectedState) 
 						{
